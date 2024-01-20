@@ -6,48 +6,50 @@ from prompts import Prompts
 logger = logging.getLogger()
 
 
-class UI:
+class UI(ctk.CTk):
     choices = list(Prompts.prompts.keys())
     font_size = 20
+    freeze_state = [True]
+    width = 1000
+    height = 900
 
     def __init__(self, transcriber, responder, audio_queue):
-        self.root = ctk.CTk()
+        super().__init__()
+        self.transcriber, self.responder, self.audio_queue = transcriber, responder, audio_queue
         self.optionmenu_var = ctk.StringVar(value=self.choices[0])
+
         self.create_ui_components()
         transcript_textbox = self.create_transcript_textbox()
         response_textbox = self.create_response_textbox()
         update_interval_slider_label, update_interval_slider = self.create_update_interval_slider()
-        freeze_button = self.create_freeze_button()
+        self.freeze_button = self.create_freeze_button()
+        self.create_prompt_option()
+        self.create_clear_transcript_button()
 
         logger.info("READY")
 
-        self.root.grid_rowconfigure(0, weight=100)
-        self.root.grid_rowconfigure(1, weight=1)
-        self.root.grid_rowconfigure(2, weight=1)
-        self.root.grid_rowconfigure(3, weight=1)
-        self.root.grid_columnconfigure(0, weight=2)
-        self.root.grid_columnconfigure(1, weight=1)
+        self.tabview.grid_rowconfigure(0, weight=100)
+        self.tabview.grid_rowconfigure(1, weight=1)
+        self.tabview.grid_rowconfigure(2, weight=1)
+        self.tabview.grid_rowconfigure(3, weight=1)
+        self.tabview.grid_columnconfigure(0, weight=2)
+        self.tabview.grid_columnconfigure(1, weight=1)
 
         # Add the clear transcript button to the UI
-        clear_transcript_button = ctk.CTkButton(self.root, text="Clear Transcript",
-                                                command=lambda: self.clear_context(transcriber, audio_queue, ))
-        clear_transcript_button.grid(row=1, column=0, padx=10, pady=3, sticky="nsew")
 
-        freeze_state = [False]  # Using list to be able to change its content inside inner functions
-
-        def freeze_unfreeze():
-            freeze_state[0] = not freeze_state[0]  # Invert the freeze state
-            freeze_button.configure(text="Unfreeze" if freeze_state[0] else "Freeze")
-
-        freeze_button.configure(command=freeze_unfreeze)
+        # Using list to be able to change its content inside inner functions
 
         update_interval_slider_label.configure(text=f"Update interval: {update_interval_slider.get()} seconds")
 
         self.update_transcript_UI(transcriber, transcript_textbox)
         self.update_response_UI(responder, response_textbox, update_interval_slider_label, update_interval_slider,
-                                freeze_state)
+                                self.freeze_state)
 
-        self.root.mainloop()
+        self.mainloop()
+
+    def freeze_unfreeze(self):
+        self.freeze_state[0] = not self.freeze_state[0]  # Invert the freeze state
+        self.freeze_button.configure(text="Unfreeze" if self.freeze_state[0] else "Freeze")
 
     def clear_context(self, transcriber, audio_queue):
         transcriber.clear_transcript_data()
@@ -87,39 +89,58 @@ class UI:
         textbox.after(300, self.update_transcript_UI, transcriber, textbox)
 
     def create_transcript_textbox(self):
-        transcript_textbox = ctk.CTkTextbox(self.root, width=300, font=("Arial", self.font_size), text_color='#FFFCF2',
+        transcript_textbox = ctk.CTkTextbox(self.tabview.tab("Transcribe"), width=600,
+                                            height=600, font=("Arial", self.font_size),
+                                            text_color='#FFFCF2',
                                             wrap="word")
         transcript_textbox.grid(row=0, column=0, padx=10, pady=20, sticky="nsew")
         return transcript_textbox
 
+    def create_clear_transcript_button(self):
+        clear_transcript_button = ctk.CTkButton(self.tabview.tab("Transcribe"), text="Clear Transcript",
+                                                command=lambda: self.clear_context(self.transcriber,
+                                                                                   self.audio_queue, ))
+        clear_transcript_button.grid(row=1, column=0, padx=10, pady=3, sticky="nsew")
+        return clear_transcript_button
+
     def create_prompt_option(self):
-        prompt_option = ctk.CTkOptionMenu(master=self.root,
+        prompt_option_label = ctk.CTkLabel(self.tabview.tab("Settings"), text=f"prompt options", font=("Arial", 12),
+                                           text_color="#FFFCF2")
+        prompt_option_label.grid(row=0, column=1, padx=10, pady=3, sticky="nsew")
+        prompt_option = ctk.CTkOptionMenu(master=self.tabview.tab("Settings"),
                                           values=self.choices,
                                           command=self.optionmenu_callback,
                                           variable=self.optionmenu_var,
-                                          width=300,
+                                          width=20,
                                           font=("Arial", self.font_size),
                                           text_color='#639cdc',
                                           )
-        prompt_option.grid(row=6, column=1, padx=10, pady=10, sticky="nsew")
+        prompt_option.grid(row=1, column=1, padx=10, pady=3, sticky="nsew")
         return prompt_option
 
     def create_response_textbox(self):
-        response_textbox = ctk.CTkTextbox(self.root, width=300, font=("Arial", self.font_size), text_color='#639cdc',
+        response_textbox = ctk.CTkTextbox(self.tabview.tab("Transcribe"),
+                                          width=300,
+                                          height=600,
+                                          font=("Arial", self.font_size),
+                                          text_color='#639cdc',
                                           wrap="word")
         response_textbox.grid(row=0, column=1, padx=10, pady=20, sticky="nsew")
         return response_textbox
 
     def create_freeze_button(self):
-        freeze_button = ctk.CTkButton(self.root, text="Freeze", command=None)
+        freeze_button = ctk.CTkButton(self.tabview.tab("Transcribe"), text="UnFreeze", command=None)
         freeze_button.grid(row=1, column=1, padx=10, pady=3, sticky="nsew")
+        freeze_button.configure(command=self.freeze_unfreeze)
         return freeze_button
 
     def create_update_interval_slider(self):
-        update_interval_slider_label = ctk.CTkLabel(self.root, text=f"", font=("Arial", 12), text_color="#FFFCF2")
+        update_interval_slider_label = ctk.CTkLabel(self.tabview.tab("Transcribe"), text=f"", font=("Arial", 12),
+                                                    text_color="#FFFCF2")
         update_interval_slider_label.grid(row=2, column=1, padx=10, pady=3, sticky="nsew")
 
-        update_interval_slider = ctk.CTkSlider(self.root, from_=1, to=10, width=300, height=20, number_of_steps=9)
+        update_interval_slider = ctk.CTkSlider(self.tabview.tab("Transcribe"), from_=1, to=10, width=300, height=20,
+                                               number_of_steps=9)
         update_interval_slider.set(2)
         update_interval_slider.grid(row=3, column=1, padx=10, pady=10, sticky="nsew")
         return update_interval_slider_label, update_interval_slider
@@ -127,8 +148,13 @@ class UI:
     def create_ui_components(self):
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("dark-blue")
-        self.root.title("GPT_meetings_UI")
-        self.root.configure(bg='#252422')
-        self.root.geometry("1000x600")
+        self.title("GPT_meetings_UI")
+        self.configure(bg='#252422')
+        self.geometry(f"{self.width}x{self.height}")
+
+        self.tabview = ctk.CTkTabview(self, width=self.width, height=self.height)
+        self.tabview.grid(row=0, column=0, padx=(0, 0), pady=(0, 0), sticky="nsew")
+        self.tabview.add("Transcribe")
+        self.tabview.add("Settings")
 
         return

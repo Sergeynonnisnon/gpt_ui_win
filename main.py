@@ -2,7 +2,7 @@ import threading
 from AudioTranscriber import AudioTranscriber
 from GPTResponder import GPTResponder
 
-import AudioRecorder 
+import AudioRecorder
 import queue
 import time
 import torch

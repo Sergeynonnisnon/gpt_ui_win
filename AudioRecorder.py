@@ -25,7 +25,7 @@ class BaseRecorder:
         print(f"[INFO] Completed ambient noise adjustment for {device_name}.")
 
     def record_into_queue(self, audio_queue):
-        def record_callback(_, audio:sr.AudioData) -> None:
+        def record_callback(_, audio: sr.AudioData) -> None:
             data = audio.get_raw_data()
             audio_queue.put((self.source_name, data, datetime.utcnow()))
 
@@ -51,7 +51,7 @@ class DefaultSpeakerRecorder(BaseRecorder):
                     print("[ERROR] No loopback device found.")
         
         source = sr.Microphone(speaker=True,
-                               device_index= default_speakers["index"],
+                               device_index=default_speakers["index"],
                                sample_rate=int(default_speakers["defaultSampleRate"]),
                                chunk_size=pyaudio.get_sample_size(pyaudio.paInt16),
                                channels=default_speakers["maxInputChannels"])

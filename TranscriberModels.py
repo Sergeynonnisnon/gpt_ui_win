@@ -3,11 +3,13 @@ import whisper
 import os
 import torch
 
+
 def get_model(use_api):
     if use_api:
         return APIWhisperTranscriber()
     else:
         return WhisperTranscriber()
+
 
 class WhisperTranscriber:
     def __init__(self):
@@ -21,7 +23,8 @@ class WhisperTranscriber:
             print(e)
             return ''
         return result['text'].strip()
-    
+
+
 class APIWhisperTranscriber:
     def get_transcription(self, wav_file_path):
         try:

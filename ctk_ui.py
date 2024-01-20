@@ -7,7 +7,8 @@ logger = logging.getLogger()
 
 
 class UI(ctk.CTk):
-    choices = list(Prompts.prompts.keys())
+    prompt_choices = list(Prompts.prompts.keys())
+    model_choices = ["gpt-4-1106-preview", "gpt-3.5-turbo-0301"]
     font_size = 20
     freeze_state = [True]
     width = 1000
@@ -16,7 +17,8 @@ class UI(ctk.CTk):
     def __init__(self, transcriber, responder, audio_queue):
         super().__init__()
         self.transcriber, self.responder, self.audio_queue = transcriber, responder, audio_queue
-        self.optionmenu_var = ctk.StringVar(value=self.choices[0])
+        self.default_prompt = ctk.StringVar(value=self.prompt_choices[0])
+        self.default_model = ctk.StringVar(value=self.model_choices[-1])
 
         self.create_ui_components()
         transcript_textbox = self.create_transcript_textbox()
@@ -24,6 +26,7 @@ class UI(ctk.CTk):
         update_interval_slider_label, update_interval_slider = self.create_update_interval_slider()
         self.freeze_button = self.create_freeze_button()
         self.create_prompt_option()
+        self.create_model_option()
         self.create_clear_transcript_button()
 
         logger.info("READY")
@@ -79,9 +82,12 @@ class UI(ctk.CTk):
         textbox.delete("0.0", "end")
         textbox.insert("0.0", text)
 
-    def optionmenu_callback(self, choice):
+    def prompt_menu_callback(self, choice):
         print("optionmenu dropdown clicked:", choice)
         Prompts.chosen_prompt = choice
+    def model_menu_callback(self, choice):
+        print("optionmenu dropdown clicked:", choice)
+        self.responder.model_name = choice
 
     def update_transcript_UI(self, transcriber, textbox):
         transcript_string = transcriber.get_transcript()
@@ -106,17 +112,32 @@ class UI(ctk.CTk):
     def create_prompt_option(self):
         prompt_option_label = ctk.CTkLabel(self.tabview.tab("Settings"), text=f"prompt options", font=("Arial", 12),
                                            text_color="#FFFCF2")
-        prompt_option_label.grid(row=0, column=1, padx=10, pady=3, sticky="nsew")
+        prompt_option_label.grid(row=0, column=3, padx=10, pady=3, sticky="nsew")
         prompt_option = ctk.CTkOptionMenu(master=self.tabview.tab("Settings"),
-                                          values=self.choices,
-                                          command=self.optionmenu_callback,
-                                          variable=self.optionmenu_var,
+                                          values=self.prompt_choices,
+                                          command=self.prompt_menu_callback,
+                                          variable=self.default_prompt,
                                           width=20,
                                           font=("Arial", self.font_size),
                                           text_color='#639cdc',
                                           )
-        prompt_option.grid(row=1, column=1, padx=10, pady=3, sticky="nsew")
+        prompt_option.grid(row=1, column=3, padx=10, pady=3, sticky="nsew")
         return prompt_option
+
+    def create_model_option(self):
+        model_option_label = ctk.CTkLabel(self.tabview.tab("Settings"), text=f"model", font=("Arial", 12),
+                                           text_color="#FFFCF2")
+        model_option_label.grid(row=0, column=2, padx=10, pady=3, sticky="nsew")
+        model_option = ctk.CTkOptionMenu(master=self.tabview.tab("Settings"),
+                                         values=self.model_choices,
+                                         command=self.model_menu_callback,
+                                         variable=self.default_model,
+                                         width=20,
+                                         font=("Arial", self.font_size),
+                                         text_color='#639cdc',
+                                         )
+        model_option.grid(row=1, column=2, padx=10, pady=3, sticky="nsew")
+        return model_option
 
     def create_response_textbox(self):
         response_textbox = ctk.CTkTextbox(self.tabview.tab("Transcribe"),

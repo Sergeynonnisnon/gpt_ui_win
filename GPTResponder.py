@@ -10,34 +10,35 @@ load_dotenv(".env")
 openai.api_key = os.environ["OPENAI_API_KEY"]
 
 
-def generate_response_from_transcript(transcript):
-    messages = [{"role": "system", "content": Prompts.prompts[Prompts.chosen_prompt]}]
-    messages.extend([{"role": "user", "content": i} for i in transcript])
-
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo-0301",
-            messages=messages,
-            temperature=0.0
-        )
-    except Exception as e:
-        print(e)
-        return ''
-    full_response = response.choices[0].message.content
-    try:
-        print(full_response)
-        return full_response.split('[')[1].split(']')[0]
-    except Exception as e:
-        print('error')
-        print(e)
-        return ''
-
 
 class GPTResponder:
     def __init__(self):
         self.response = INITIAL_RESPONSE
         self.response_interval = 2
         self.is_frozen = False
+        self.model_name = "gpt-3.5-turbo-0301"
+
+    def generate_response_from_transcript(self, transcript):
+        messages = [{"role": "system", "content": Prompts.prompts[Prompts.chosen_prompt]}]
+        messages.extend(reversed([{"role": "user", "content": i} for i in transcript]))
+
+        try:
+            response = openai.ChatCompletion.create(
+                model=self.model_name,
+                messages=messages,
+                temperature=0.0
+            )
+        except Exception as e:
+            print(e)
+            return ''
+        full_response = response.choices[0].message.content
+        try:
+
+            return full_response.split('[')[1].split(']')[0]
+        except Exception as e:
+            print('error')
+
+            return ''
 
     def respond_to_transcriber(self, transcriber):
         while True:
@@ -47,7 +48,7 @@ class GPTResponder:
                 transcriber.transcript_changed_event.clear()
                 transcript_list = transcriber.get_transcript()
                 if self.is_frozen:
-                    response = generate_response_from_transcript(transcript_list)
+                    response = self.generate_response_from_transcript(transcript_list)
                 else:
                     response = ''
                 end_time = time.time()  # Measure end time

@@ -1,6 +1,6 @@
 import openai
 
-from prompts import  INITIAL_RESPONSE ,Prompts
+from prompts import INITIAL_RESPONSE, Prompts
 import time
 
 from dotenv import load_dotenv
@@ -11,7 +11,6 @@ openai.api_key = os.environ["OPENAI_API_KEY"]
 
 
 def generate_response_from_transcript(transcript):
-
     messages = [{"role": "system", "content": Prompts.prompts[Prompts.chosen_prompt]}]
     messages.extend([{"role": "user", "content": i} for i in transcript])
 
@@ -38,6 +37,7 @@ class GPTResponder:
     def __init__(self):
         self.response = INITIAL_RESPONSE
         self.response_interval = 2
+        self.is_frozen = False
 
     def respond_to_transcriber(self, transcriber):
         while True:
@@ -46,8 +46,10 @@ class GPTResponder:
 
                 transcriber.transcript_changed_event.clear()
                 transcript_list = transcriber.get_transcript()
-                response = generate_response_from_transcript(transcript_list)
-
+                if self.is_frozen:
+                    response = generate_response_from_transcript(transcript_list)
+                else:
+                    response = ''
                 end_time = time.time()  # Measure end time
                 execution_time = end_time - start_time  # Calculate the time it took to execute the function
 
@@ -62,3 +64,7 @@ class GPTResponder:
 
     def update_response_interval(self, interval):
         self.response_interval = interval
+
+    def update_status(self, status):
+
+        self.is_frozen = status

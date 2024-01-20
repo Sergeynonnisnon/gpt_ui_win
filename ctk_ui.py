@@ -8,13 +8,16 @@ logger = logging.getLogger()
 
 class UI:
     choices = list(Prompts.prompts.keys())
+    font_size = 20
 
     def __init__(self, transcriber, responder, audio_queue):
         self.root = ctk.CTk()
         self.optionmenu_var = ctk.StringVar(value=self.choices[0])
-        transcript_textbox, response_textbox, \
-            update_interval_slider, update_interval_slider_label, \
-            freeze_button = self.create_ui_components()
+        self.create_ui_components()
+        transcript_textbox = self.create_transcript_textbox()
+        response_textbox = self.create_response_textbox()
+        update_interval_slider_label, update_interval_slider = self.create_update_interval_slider()
+        freeze_button = self.create_freeze_button()
 
         logger.info("READY")
 
@@ -63,7 +66,9 @@ class UI:
             update_interval = int(update_interval_slider.get())
             responder.update_response_interval(update_interval)
             update_interval_slider_label.configure(text=f"Update interval: {update_interval} seconds")
-
+            responder.update_status(True)
+        else:
+            responder.update_status(False)
         textbox.after(300, self.update_response_UI, responder, textbox, update_interval_slider_label,
                       update_interval_slider,
                       freeze_state)
@@ -81,6 +86,44 @@ class UI:
         self.write_in_textbox(textbox, ''.join(transcript_string))
         textbox.after(300, self.update_transcript_UI, transcriber, textbox)
 
+    def create_transcript_textbox(self):
+        transcript_textbox = ctk.CTkTextbox(self.root, width=300, font=("Arial", self.font_size), text_color='#FFFCF2',
+                                            wrap="word")
+        transcript_textbox.grid(row=0, column=0, padx=10, pady=20, sticky="nsew")
+        return transcript_textbox
+
+    def create_prompt_option(self):
+        prompt_option = ctk.CTkOptionMenu(master=self.root,
+                                          values=self.choices,
+                                          command=self.optionmenu_callback,
+                                          variable=self.optionmenu_var,
+                                          width=300,
+                                          font=("Arial", self.font_size),
+                                          text_color='#639cdc',
+                                          )
+        prompt_option.grid(row=6, column=1, padx=10, pady=10, sticky="nsew")
+        return prompt_option
+
+    def create_response_textbox(self):
+        response_textbox = ctk.CTkTextbox(self.root, width=300, font=("Arial", self.font_size), text_color='#639cdc',
+                                          wrap="word")
+        response_textbox.grid(row=0, column=1, padx=10, pady=20, sticky="nsew")
+        return response_textbox
+
+    def create_freeze_button(self):
+        freeze_button = ctk.CTkButton(self.root, text="Freeze", command=None)
+        freeze_button.grid(row=1, column=1, padx=10, pady=3, sticky="nsew")
+        return freeze_button
+
+    def create_update_interval_slider(self):
+        update_interval_slider_label = ctk.CTkLabel(self.root, text=f"", font=("Arial", 12), text_color="#FFFCF2")
+        update_interval_slider_label.grid(row=2, column=1, padx=10, pady=3, sticky="nsew")
+
+        update_interval_slider = ctk.CTkSlider(self.root, from_=1, to=10, width=300, height=20, number_of_steps=9)
+        update_interval_slider.set(2)
+        update_interval_slider.grid(row=3, column=1, padx=10, pady=10, sticky="nsew")
+        return update_interval_slider_label, update_interval_slider
+
     def create_ui_components(self):
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("dark-blue")
@@ -88,34 +131,4 @@ class UI:
         self.root.configure(bg='#252422')
         self.root.geometry("1000x600")
 
-        font_size = 20
-
-        transcript_textbox = ctk.CTkTextbox(self.root, width=300, font=("Arial", font_size), text_color='#FFFCF2',
-                                            wrap="word")
-        transcript_textbox.grid(row=0, column=0, padx=10, pady=20, sticky="nsew")
-
-        combobox = ctk.CTkOptionMenu(master=self.root,
-                                     values=self.choices,
-                                     command=self.optionmenu_callback,
-                                     variable=self.optionmenu_var,
-                                     width=300,
-                                     font=("Arial", font_size),
-                                     text_color='#639cdc',
-                                     )
-        combobox.grid(row=6, column=1, padx=10, pady=10, sticky="nsew")
-
-        response_textbox = ctk.CTkTextbox(self.root, width=300, font=("Arial", font_size), text_color='#639cdc',
-                                          wrap="word")
-        response_textbox.grid(row=0, column=1, padx=10, pady=20, sticky="nsew")
-
-        freeze_button = ctk.CTkButton(self.root, text="Freeze", command=None)
-        freeze_button.grid(row=1, column=1, padx=10, pady=3, sticky="nsew")
-
-        update_interval_slider_label = ctk.CTkLabel(self.root, text=f"", font=("Arial", 12), text_color="#FFFCF2")
-        update_interval_slider_label.grid(row=2, column=1, padx=10, pady=3, sticky="nsew")
-
-        update_interval_slider = ctk.CTkSlider(self.root, from_=1, to=10, width=300, height=20, number_of_steps=9)
-        update_interval_slider.set(2)
-        update_interval_slider.grid(row=3, column=1, padx=10, pady=10, sticky="nsew")
-
-        return transcript_textbox, response_textbox, update_interval_slider, update_interval_slider_label, freeze_button
+        return
